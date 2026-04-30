@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InvoiceForge — Professional Invoice & Proposal Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #0f0e0d;
+    --ink2: #3d3b38;
+    --ink3: #7a7772;
+    --surface: #faf9f7;
+    --white: #ffffff;
+    --border: #e8e5e0;
+    --border2: #d0ccc5;
+    --accent: #c8703a;
+    --accent2: #e8956a;
+    --accent-bg: #fdf1ea;
+    --green: #2d7a4f;
+    --green-bg: #edf7f2;
+    --blue: #2355a0;
+    --blue-bg: #eef3fc;
+    --shadow: 0 2px 12px rgba(15,14,13,0.08);
+    --shadow-lg: 0 8px 40px rgba(15,14,13,0.12);
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--surface);
+    color: var(--ink);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* HEADER */
+  .app-header {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    color: var(--ink);
+    letter-spacing: -0.5px;
+  }
+  .logo span { color: var(--accent); }
+  .header-tabs { display: flex; gap: 4px; }
+  .tab-btn {
+    padding: 7px 18px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink3);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tab-btn.active {
+    background: var(--accent-bg);
+    border-color: var(--accent2);
+    color: var(--accent);
+  }
+  .tab-btn:hover:not(.active) { background: var(--surface); color: var(--ink); }
+
+  .header-actions { display: flex; gap: 10px; align-items: center; }
+  .btn {
+    padding: 8px 20px;
+    border-radius: 8px;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border2);
+    color: var(--ink2);
+  }
+  .btn-ghost:hover { background: var(--surface); border-color: var(--ink3); }
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+    border: 1px solid var(--accent);
+  }
+  .btn-primary:hover { background: #b5602e; }
+  .btn-green {
+    background: var(--green);
+    color: white;
+    border: 1px solid var(--green);
+  }
+  .btn-green:hover { background: #235f3d; }
+
+  /* LAYOUT */
+  .app-layout {
+    display: grid;
+    grid-template-columns: 420px 1fr;
+    height: calc(100vh - 60px);
+    overflow: hidden;
+  }
+
+  /* FORM PANEL */
+  .form-panel {
+    background: var(--white);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 28px 28px 60px;
+  }
+  .form-panel::-webkit-scrollbar { width: 4px; }
+  .form-panel::-webkit-scrollbar-track { background: transparent; }
+  .form-panel::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+  .section-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--ink3);
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .form-section { margin-bottom: 28px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .form-row.full { grid-template-columns: 1fr; }
+  .form-row.three { grid-template-columns: 1fr 1fr 1fr; }
+
+  label {
+    display: block;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--ink3);
+    margin-bottom: 5px;
+    letter-spacing: 0.3px;
+  }
+  input, textarea, select {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.15s;
+    resize: none;
+  }
+  input:focus, textarea:focus, select:focus {
+    border-color: var(--accent);
+    background: var(--white);
+  }
+  textarea { min-height: 72px; }
+
+  /* COLOR PICKER */
+  .color-row { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+  .color-swatch {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: transform 0.1s;
+    flex-shrink: 0;
+  }
+  .color-swatch:hover { transform: scale(1.15); }
+  .color-swatch.selected { border-color: var(--ink); }
+  .color-label { font-size: 11px; color: var(--ink3); margin-left: 4px; }
+
+  /* LINE ITEMS */
+  .line-items-header {
+    display: grid;
+    grid-template-columns: 1fr 70px 80px 80px 32px;
+    gap: 8px;
+    padding: 6px 0;
+    margin-bottom: 6px;
+  }
+  .li-head { font-size: 10px; font-weight: 600; color: var(--ink3); letter-spacing: 0.8px; text-transform: uppercase; }
+  .line-item {
+    display: grid;
+    grid-template-columns: 1fr 70px 80px 80px 32px;
+    gap: 8px;
+    margin-bottom: 8px;
+    align-items: start;
+  }
+  .li-total {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: 13px;
+    color: var(--ink2);
+    font-weight: 500;
+  }
+  .li-remove {
+    width: 32px; height: 38px;
+    border: 1px solid var(--border);
+    background: transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--ink3);
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+  .li-remove:hover { background: #fef2f2; border-color: #f9a8a8; color: #dc2626; }
+  .add-item-btn {
+    width: 100%;
+    padding: 9px;
+    border: 1px dashed var(--border2);
+    background: transparent;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    color: var(--ink3);
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-top: 4px;
+  }
+  .add-item-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+
+  /* TOTALS SUMMARY */
+  .totals-box {
+    background: var(--surface);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-top: 12px;
+  }
+  .total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    font-size: 13px;
+    color: var(--ink2);
+  }
+  .total-row.grand {
+    border-top: 1px solid var(--border2);
+    margin-top: 6px;
+    padding-top: 10px;
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--ink);
+  }
+
+  /* PREVIEW PANEL */
+  .preview-panel {
+    background: #e8e5e0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 24px;
+    gap: 0;
+  }
+  .preview-panel::-webkit-scrollbar { width: 6px; }
+  .preview-panel::-webkit-scrollbar-track { background: transparent; }
+  .preview-panel::-webkit-scrollbar-thumb { background: #c5c0bb; border-radius: 4px; }
+
+  .preview-toolbar {
+    width: 100%;
+    max-width: 720px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    flex-shrink: 0;
+  }
+  .preview-label { font-size: 11px; font-weight: 600; color: #6b6760; letter-spacing: 1px; text-transform: uppercase; }
+
+  /* DOCUMENT PREVIEW */
+  .doc-preview {
+    width: 100%;
+    max-width: 720px;
+    background: white;
+    box-shadow: var(--shadow-lg);
+    border-radius: 4px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .doc-header {
+    padding: 48px 56px 36px;
+    border-bottom: 3px solid #c8703a;
+  }
+  .doc-header-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+  .doc-company-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px;
+    color: #0f0e0d;
+    line-height: 1.2;
+    margin-bottom: 4px;
+  }
+  .doc-company-sub { font-size: 12px; color: #7a7772; line-height: 1.6; }
+  .doc-title-area { text-align: right; }
+  .doc-type {
+    font-family: 'DM Serif Display', serif;
+    font-size: 36px;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .doc-meta { font-size: 12px; color: #7a7772; }
+  .doc-meta strong { color: #3d3b38; }
+
+  .doc-body { padding: 36px 56px; }
+  .doc-parties { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 36px; }
+  .party-label { font-size: 9px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #7a7772; margin-bottom: 8px; }
+  .party-name { font-size: 15px; font-weight: 600; color: #0f0e0d; margin-bottom: 4px; }
+  .party-sub { font-size: 12px; color: #7a7772; line-height: 1.7; }
+
+  /* SCOPE / DESCRIPTION */
+  .doc-scope {
+    background: #faf9f7;
+    border-left: 3px solid #c8703a;
+    border-radius: 0 8px 8px 0;
+    padding: 16px 20px;
+    margin-bottom: 32px;
+  }
+  .doc-scope-title { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #7a7772; margin-bottom: 8px; }
+  .doc-scope-text { font-size: 13px; color: #3d3b38; line-height: 1.7; }
+
+  /* ITEMS TABLE */
+  .doc-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+  .doc-table thead tr { border-bottom: 2px solid #0f0e0d; }
+  .doc-table th { font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: #7a7772; padding: 0 0 10px; text-align: left; }
+  .doc-table th:last-child, .doc-table td:last-child { text-align: right; }
+  .doc-table td { padding: 12px 0; border-bottom: 1px solid #e8e5e0; font-size: 13px; color: #0f0e0d; vertical-align: top; }
+  .doc-table td.muted { color: #7a7772; font-size: 12px; }
+  .doc-table tr:last-child td { border-bottom: none; }
+
+  .doc-totals { display: flex; justify-content: flex-end; margin-bottom: 32px; }
+  .doc-totals-box { width: 260px; }
+  .doc-total-row { display: flex; justify-content: space-between; font-size: 13px; color: #3d3b38; padding: 5px 0; }
+  .doc-total-row.grand-total {
+    border-top: 2px solid #0f0e0d;
+    margin-top: 6px;
+    padding-top: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #0f0e0d;
+  }
+
+  .doc-footer {
+    padding: 24px 56px 40px;
+    border-top: 1px solid #e8e5e0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+  }
+  .doc-footer-label { font-size: 9px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #7a7772; margin-bottom: 6px; }
+  .doc-footer-text { font-size: 12px; color: #7a7772; line-height: 1.7; }
+  .doc-footer-badge {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+
+  /* STATUS BADGES */
+  .status-draft { background: #f1ede8; color: #7a7772; }
+  .status-sent { background: #eef3fc; color: #2355a0; }
+  .status-paid { background: #edf7f2; color: #2d7a4f; }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--ink);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    z-index: 9999;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* SCROLLBAR */
+  .preview-panel::-webkit-scrollbar { width: 6px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="app-header">
+  <div class="logo">Invoice<span>Forge</span></div>
+  <div class="header-tabs">
+    <button class="tab-btn active" onclick="switchDocType('invoice', this)">Invoice</button>
+    <button class="tab-btn" onclick="switchDocType('proposal', this)">Proposal</button>
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-ghost" onclick="clearForm()">↺ Reset</button>
+    <button class="btn btn-ghost" onclick="copyLink()">⎘ Copy</button>
+    <button class="btn btn-primary" onclick="exportPDF()">↓ Export PDF</button>
+  </div>
+</header>
+
+<!-- MAIN LAYOUT -->
+<div class="app-layout">
+
+  <!-- FORM PANEL -->
+  <div class="form-panel">
+
+    <!-- Brand Color -->
+    <div class="form-section">
+      <div class="section-label">Brand Color</div>
+      <div class="color-row">
+        <div class="color-swatch selected" style="background:#c8703a" data-color="#c8703a" onclick="setColor(this)"></div>
+        <div class="color-swatch" style="background:#2355a0" data-color="#2355a0" onclick="setColor(this)"></div>
+        <div class="color-swatch" style="background:#2d7a4f" data-color="#2d7a4f" onclick="setColor(this)"></div>
+        <div class="color-swatch" style="background:#7c3aed" data-color="#7c3aed" onclick="setColor(this)"></div>
+        <div class="color-swatch" style="background:#0f0e0d" data-color="#0f0e0d" onclick="setColor(this)"></div>
+        <div class="color-swatch" style="background:#be185d" data-color="#be185d" onclick="setColor(this)"></div>
+        <span class="color-label">Choose accent color</span>
+      </div>
+    </div>
+
+    <!-- Your Business -->
+    <div class="form-section">
+      <div class="section-label">Your Business</div>
+      <div class="form-row full">
+        <div><label>Business / Your Name</label><input type="text" id="fromName" placeholder="Acme Studio" oninput="updatePreview()" value="Your Studio"></div>
+      </div>
+      <div class="form-row full">
+        <div><label>Tagline or Title (optional)</label><input type="text" id="fromTitle" placeholder="Creative Design Agency" oninput="updatePreview()" value="Creative Design Agency"></div>
+      </div>
+      <div class="form-row">
+        <div><label>Email</label><input type="text" id="fromEmail" placeholder="hello@you.com" oninput="updatePreview()" value="hello@yourstudio.com"></div>
+        <div><label>Phone</label><input type="text" id="fromPhone" placeholder="+1 234 567 890" oninput="updatePreview()" value="+1 (555) 012-3456"></div>
+      </div>
+      <div class="form-row full">
+        <div><label>Address</label><input type="text" id="fromAddress" placeholder="123 Main St, City, Country" oninput="updatePreview()" value="123 Creative Ave, New York, NY 10001"></div>
+      </div>
+    </div>
+
+    <!-- Client Info -->
+    <div class="form-section">
+      <div class="section-label">Client / Bill To</div>
+      <div class="form-row full">
+        <div><label>Client Name</label><input type="text" id="toName" placeholder="Client Company" oninput="updatePreview()" value="Horizon Brands Co."></div>
+      </div>
+      <div class="form-row full">
+        <div><label>Client Address</label><input type="text" id="toAddress" placeholder="456 Client Ave, City, Country" oninput="updatePreview()" value="456 Park Avenue, Suite 800, New York, NY 10022"></div>
+      </div>
+      <div class="form-row">
+        <div><label>Contact Name</label><input type="text" id="toContact" placeholder="Jane Smith" oninput="updatePreview()" value="Sarah Johnson"></div>
+        <div><label>Contact Email</label><input type="text" id="toEmail" placeholder="jane@client.com" oninput="updatePreview()" value="s.johnson@horizonbrands.com"></div>
+      </div>
+    </div>
+
+    <!-- Document Details -->
+    <div class="form-section">
+      <div class="section-label">Document Details</div>
+      <div class="form-row three">
+        <div><label id="docNumLabel">Invoice #</label><input type="text" id="docNumber" value="INV-0042" oninput="updatePreview()"></div>
+        <div><label id="issueDateLabel">Issue Date</label><input type="date" id="issueDate" oninput="updatePreview()"></div>
+        <div><label id="dueDateLabel">Due Date</label><input type="date" id="dueDate" oninput="updatePreview()"></div>
+      </div>
+      <div class="form-row">
+        <div>
+          <label>Currency</label>
+          <select id="currency" onchange="updatePreview()">
+            <option value="$">USD ($)</option>
+            <option value="€">EUR (€)</option>
+            <option value="£">GBP (£)</option>
+            <option value="₹">INR (₹)</option>
+            <option value="AED">AED</option>
+            <option value="PKR">PKR</option>
+            <option value="CAD $">CAD</option>
+            <option value="A$">AUD</option>
+          </select>
+        </div>
+        <div>
+          <label>Status</label>
+          <select id="docStatus" onchange="updatePreview()">
+            <option value="draft">Draft</option>
+            <option value="sent">Sent</option>
+            <option value="paid">Paid</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Description -->
+    <div class="form-section">
+      <div class="section-label" id="scopeLabel">Description / Notes</div>
+      <div class="form-row full">
+        <div><textarea id="description" placeholder="Describe the project or work being invoiced..." oninput="updatePreview()">Full branding and website redesign project including logo design, brand guidelines, UI/UX design, and front-end development for the new product launch.</textarea></div>
+      </div>
+    </div>
+
+    <!-- Line Items -->
+    <div class="form-section">
+      <div class="section-label">Line Items</div>
+      <div class="line-items-header">
+        <span class="li-head">Description</span>
+        <span class="li-head">Qty</span>
+        <span class="li-head">Rate</span>
+        <span class="li-head">Total</span>
+        <span></span>
+      </div>
+      <div id="lineItemsContainer"></div>
+      <button class="add-item-btn" onclick="addLineItem()">+ Add Line Item</button>
+
+      <div class="totals-box">
+        <div class="total-row"><span>Subtotal</span><span id="subtotalDisplay">$0.00</span></div>
+        <div class="total-row">
+          <span>Tax (<input type="number" id="taxRate" value="10" min="0" max="100" step="0.5" style="width:46px;padding:2px 6px;display:inline;border-radius:4px;border:1px solid var(--border);font-size:12px;background:white" oninput="updateTotals()">%)</span>
+          <span id="taxDisplay">$0.00</span>
+        </div>
+        <div class="total-row">
+          <span>Discount (<input type="number" id="discountVal" value="0" min="0" step="1" style="width:50px;padding:2px 6px;display:inline;border-radius:4px;border:1px solid var(--border);font-size:12px;background:white" oninput="updateTotals()"> %)</span>
+          <span id="discountDisplay">-$0.00</span>
+        </div>
+        <div class="total-row grand"><span>Total Due</span><span id="grandTotalDisplay">$0.00</span></div>
+      </div>
+    </div>
+
+    <!-- Payment / Terms -->
+    <div class="form-section">
+      <div class="section-label" id="termsLabel">Payment Terms</div>
+      <div class="form-row full">
+        <div><label>Bank / Payment Details</label><input type="text" id="paymentInfo" placeholder="Bank: Chase — Acct: 1234567890 — Routing: 021000021" oninput="updatePreview()" value="Bank: Chase — Acct: 987654321 — Routing: 021000021"></div>
+      </div>
+      <div class="form-row full">
+        <div><label>Notes (optional)</label><textarea id="notes" placeholder="Thank you for your business!" oninput="updatePreview()" style="min-height:54px">Thank you for your business! Payment due within 30 days.</textarea></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- PREVIEW PANEL -->
+  <div class="preview-panel">
+    <div class="preview-toolbar">
+      <span class="preview-label">Live Preview</span>
+      <button class="btn btn-green" onclick="exportPDF()" style="font-size:12px;padding:7px 16px;">↓ Download PDF</button>
+    </div>
+
+    <div class="doc-preview" id="docPreview">
+      <!-- Rendered dynamically -->
+    </div>
+  </div>
+
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+  let docType = 'invoice';
+  let accentColor = '#c8703a';
+  let lineItems = [
+    { desc: 'Brand Identity Design', qty: 1, rate: 3500 },
+    { desc: 'UI/UX Design (5 screens)', qty: 5, rate: 800 },
+    { desc: 'Front-end Development', qty: 1, rate: 4200 },
+  ];
+
+  // Init dates
+  const today = new Date();
+  const due = new Date(today); due.setDate(due.getDate() + 30);
+  document.getElementById('issueDate').value = today.toISOString().split('T')[0];
+  document.getElementById('dueDate').value = due.toISOString().split('T')[0];
+
+  function switchDocType(type, btn) {
+    docType = type;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    // Update labels
+    const isProposal = type === 'proposal';
+    document.getElementById('docNumLabel').textContent = isProposal ? 'Proposal #' : 'Invoice #';
+    document.getElementById('issueDateLabel').textContent = isProposal ? 'Prepared' : 'Issue Date';
+    document.getElementById('dueDateLabel').textContent = isProposal ? 'Valid Until' : 'Due Date';
+    document.getElementById('scopeLabel').textContent = isProposal ? 'Project Scope' : 'Description / Notes';
+    document.getElementById('termsLabel').textContent = isProposal ? 'Terms & Conditions' : 'Payment Terms';
+    document.getElementById('docNumber').value = isProposal ? 'PRO-0012' : 'INV-0042';
+    updatePreview();
+  }
+
+  function setColor(el) {
+    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+    el.classList.add('selected');
+    accentColor = el.dataset.color;
+    updatePreview();
+  }
+
+  function g(id) { return document.getElementById(id)?.value || ''; }
+
+  function addLineItem(desc='', qty=1, rate=0) {
+    lineItems.push({ desc, qty, rate });
+    renderLineItems();
+    updatePreview();
+  }
+
+  function removeLineItem(i) {
+    lineItems.splice(i, 1);
+    renderLineItems();
+    updatePreview();
+  }
+
+  function renderLineItems() {
+    const container = document.getElementById('lineItemsContainer');
+    container.innerHTML = '';
+    lineItems.forEach((item, i) => {
+      const total = (parseFloat(item.qty) || 0) * (parseFloat(item.rate) || 0);
+      const row = document.createElement('div');
+      row.className = 'line-item';
+      row.innerHTML = `
+        <input type="text" placeholder="Item description" value="${item.desc}" oninput="lineItems[${i}].desc=this.value;updatePreview()">
+        <input type="number" placeholder="1" value="${item.qty}" min="0" step="0.5" oninput="lineItems[${i}].qty=parseFloat(this.value)||0;updateLineTotal(${i});updatePreview()">
+        <input type="number" placeholder="0.00" value="${item.rate}" min="0" step="0.01" oninput="lineItems[${i}].rate=parseFloat(this.value)||0;updateLineTotal(${i});updatePreview()">
+        <div class="li-total" id="lt-${i}">${formatCurrency(total)}</div>
+        <button class="li-remove" onclick="removeLineItem(${i})">×</button>
+      `;
+      container.appendChild(row);
+    });
+    updateTotals();
+  }
+
+  function updateLineTotal(i) {
+    const total = (lineItems[i].qty || 0) * (lineItems[i].rate || 0);
+    const el = document.getElementById(`lt-${i}`);
+    if (el) el.textContent = formatCurrency(total);
+    updateTotals();
+  }
+
+  function getCurrency() { return g('currency') || '$'; }
+
+  function formatCurrency(amount) {
+    const sym = getCurrency();
+    return sym + parseFloat(amount || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
+
+  function getSubtotal() {
+    return lineItems.reduce((s, item) => s + (parseFloat(item.qty)||0) * (parseFloat(item.rate)||0), 0);
+  }
+
+  function updateTotals() {
+    const sub = getSubtotal();
+    const tax = sub * (parseFloat(g('taxRate')) || 0) / 100;
+    const discount = sub * (parseFloat(g('discountVal')) || 0) / 100;
+    const grand = sub + tax - discount;
+    document.getElementById('subtotalDisplay').textContent = formatCurrency(sub);
+    document.getElementById('taxDisplay').textContent = formatCurrency(tax);
+    document.getElementById('discountDisplay').textContent = '-' + formatCurrency(discount);
+    document.getElementById('grandTotalDisplay').textContent = formatCurrency(grand);
+    updatePreview();
+  }
+
+  function fmtDate(val) {
+    if (!val) return '—';
+    const d = new Date(val + 'T00:00:00');
+    return d.toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+  }
+
+  function updatePreview() {
+    const sub = getSubtotal();
+    const tax = sub * (parseFloat(g('taxRate')) || 0) / 100;
+    const discount = sub * (parseFloat(g('discountVal')) || 0) / 100;
+    const grand = sub + tax - discount;
+    const status = g('docStatus');
+    const statusLabel = { draft: 'Draft', sent: 'Sent', paid: 'Paid' }[status] || 'Draft';
+    const statusClass = { draft: 'status-draft', sent: 'status-sent', paid: 'status-paid' }[status] || 'status-draft';
+    const isProposal = docType === 'proposal';
+    const typeLabel = isProposal ? 'Proposal' : 'Invoice';
+    const accent = accentColor;
+    const accentLight = accentColor + '18';
+
+    const tableRows = lineItems.map(item => {
+      const tot = (parseFloat(item.qty)||0) * (parseFloat(item.rate)||0);
+      return `<tr>
+        <td>${item.desc || '<span style="color:#aaa">—</span>'}</td>
+        <td class="muted">${item.qty}</td>
+        <td class="muted">${formatCurrency(item.rate)}</td>
+        <td style="font-weight:500">${formatCurrency(tot)}</td>
+      </tr>`;
+    }).join('');
+
+    document.getElementById('docPreview').innerHTML = `
+      <div class="doc-header" style="border-bottom-color:${accent}">
+        <div class="doc-header-grid">
+          <div>
+            <div class="doc-company-name">${g('fromName') || 'Your Business'}</div>
+            <div class="doc-company-sub">
+              ${g('fromTitle') ? g('fromTitle') + '<br>' : ''}
+              ${g('fromEmail') ? g('fromEmail') + '<br>' : ''}
+              ${g('fromPhone') ? g('fromPhone') + '<br>' : ''}
+              ${g('fromAddress') || ''}
+            </div>
+          </div>
+          <div class="doc-title-area">
+            <div class="doc-type" style="color:${accent}">${typeLabel}</div>
+            <div class="doc-meta">
+              <strong>${isProposal ? 'Proposal' : 'Invoice'} No.</strong> ${g('docNumber') || '—'}<br>
+              <strong>${isProposal ? 'Prepared' : 'Issued'}</strong> ${fmtDate(g('issueDate'))}<br>
+              <strong>${isProposal ? 'Valid Until' : 'Due'}</strong> ${fmtDate(g('dueDate'))}
+            </div>
+            <div class="doc-footer-badge ${statusClass}" style="margin-top:10px">${statusLabel}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="doc-body">
+        <div class="doc-parties">
+          <div>
+            <div class="party-label">From</div>
+            <div class="party-name">${g('fromName') || '—'}</div>
+            <div class="party-sub">${[g('fromEmail'), g('fromPhone'), g('fromAddress')].filter(Boolean).join('<br>')}</div>
+          </div>
+          <div>
+            <div class="party-label">Bill To</div>
+            <div class="party-name">${g('toName') || '—'}</div>
+            <div class="party-sub">${[g('toContact'), g('toEmail'), g('toAddress')].filter(Boolean).join('<br>')}</div>
+          </div>
+        </div>
+
+        ${g('description') ? `
+        <div class="doc-scope" style="border-left-color:${accent};background:${accentLight}">
+          <div class="doc-scope-title">${isProposal ? 'Project Scope' : 'Description'}</div>
+          <div class="doc-scope-text">${g('description')}</div>
+        </div>` : ''}
+
+        <table class="doc-table">
+          <thead>
+            <tr>
+              <th style="width:45%">Description</th>
+              <th style="width:10%">Qty</th>
+              <th style="width:20%">Rate</th>
+              <th style="width:25%">Amount</th>
+            </tr>
+          </thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+
+        <div class="doc-totals">
+          <div class="doc-totals-box">
+            <div class="doc-total-row"><span>Subtotal</span><span>${formatCurrency(sub)}</span></div>
+            ${tax > 0 ? `<div class="doc-total-row"><span>Tax (${g('taxRate')}%)</span><span>${formatCurrency(tax)}</span></div>` : ''}
+            ${discount > 0 ? `<div class="doc-total-row"><span>Discount (${g('discountVal')}%)</span><span>-${formatCurrency(discount)}</span></div>` : ''}
+            <div class="doc-total-row grand-total"><span>Total Due</span><span style="color:${accent}">${formatCurrency(grand)}</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="doc-footer">
+        <div>
+          <div class="doc-footer-label">${isProposal ? 'Terms & Conditions' : 'Payment Details'}</div>
+          <div class="doc-footer-text">${g('paymentInfo') || '—'}</div>
+        </div>
+        <div>
+          <div class="doc-footer-label">Notes</div>
+          <div class="doc-footer-text">${g('notes') || '—'}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  function clearForm() {
+    if (!confirm('Reset all fields?')) return;
+    ['fromName','fromTitle','fromEmail','fromPhone','fromAddress','toName','toAddress','toContact','toEmail','description','paymentInfo','notes'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    lineItems = [];
+    renderLineItems();
+    updatePreview();
+    showToast('✓ Form reset');
+  }
+
+  function copyLink() {
+    navigator.clipboard.writeText(window.location.href).then(() => showToast('✓ Link copied to clipboard'));
+  }
+
+  function exportPDF() {
+    showToast('⏳ Generating PDF...');
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const W = 210, H = 297;
+    const margin = 20;
+    let y = 0;
+    const accent = accentColor;
+    const accentRGB = hexToRGB(accent);
+    const isProposal = docType === 'proposal';
+    const sub = getSubtotal();
+    const tax = sub * (parseFloat(g('taxRate')) || 0) / 100;
+    const discount = sub * (parseFloat(g('discountVal')) || 0) / 100;
+    const grand = sub + tax - discount;
+
+    function hexToRGB(hex) {
+      const r = parseInt(hex.slice(1,3),16), g2 = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+      return [r, g2, b];
+    }
+
+    // Header background strip
+    doc.setFillColor(249, 248, 246);
+    doc.rect(0, 0, W, 56, 'F');
+
+    // Accent border bottom of header
+    doc.setFillColor(...accentRGB);
+    doc.rect(0, 53, W, 2, 'F');
+
+    // Company Name
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.setTextColor(15, 14, 13);
+    doc.text(g('fromName') || 'Your Business', margin, 18);
+
+    // Company sub
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(122, 119, 114);
+    const fromSub = [g('fromTitle'), g('fromEmail'), g('fromPhone'), g('fromAddress')].filter(Boolean).join(' | ');
+    doc.text(fromSub, margin, 25);
+
+    // Doc Type (right)
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(26);
+    doc.setTextColor(...accentRGB);
+    doc.text(isProposal ? 'PROPOSAL' : 'INVOICE', W - margin, 20, { align: 'right' });
+
+    // Meta right
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(122, 119, 114);
+    const num = g('docNumber') || '—';
+    const issued = fmtDate(g('issueDate'));
+    const due2 = fmtDate(g('dueDate'));
+    doc.text(`No. ${num}`, W - margin, 30, { align: 'right' });
+    doc.text(`${isProposal ? 'Prepared' : 'Issued'}: ${issued}`, W - margin, 36, { align: 'right' });
+    doc.text(`${isProposal ? 'Valid Until' : 'Due'}: ${due2}`, W - margin, 42, { align: 'right' });
+
+    y = 66;
+
+    // Parties
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7);
+    doc.setTextColor(122, 119, 114);
+    doc.text('FROM', margin, y);
+    doc.text('BILL TO', W / 2 + 4, y);
+
+    y += 5;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(15, 14, 13);
+    doc.text(g('fromName') || '—', margin, y);
+    doc.text(g('toName') || '—', W / 2 + 4, y);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(122, 119, 114);
+    y += 5;
+    const fromLines = [g('fromEmail'), g('fromPhone'), g('fromAddress')].filter(Boolean);
+    const toLines = [g('toContact'), g('toEmail'), g('toAddress')].filter(Boolean);
+    const maxLines = Math.max(fromLines.length, toLines.length);
+    for (let i = 0; i < maxLines; i++) {
+      if (fromLines[i]) doc.text(fromLines[i], margin, y);
+      if (toLines[i]) doc.text(toLines[i], W / 2 + 4, y);
+      y += 4.5;
+    }
+
+    y += 6;
+
+    // Description box
+    if (g('description')) {
+      doc.setFillColor(...accentRGB);
+      doc.rect(margin, y, 2, 14, 'F');
+      doc.setFillColor(250, 248, 246);
+      doc.rect(margin + 2, y, W - margin * 2 - 2, 14, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7);
+      doc.setTextColor(122, 119, 114);
+      doc.text(isProposal ? 'PROJECT SCOPE' : 'DESCRIPTION', margin + 6, y + 4);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(61, 59, 56);
+      const descLines = doc.splitTextToSize(g('description'), W - margin * 2 - 12);
+      doc.text(descLines[0], margin + 6, y + 10);
+      y += 20;
+    }
+
+    // Table header
+    doc.setFillColor(15, 14, 13);
+    doc.rect(margin, y, W - margin * 2, 0.4, 'F');
+    y += 5;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.5);
+    doc.setTextColor(122, 119, 114);
+    doc.text('DESCRIPTION', margin, y);
+    doc.text('QTY', 140, y);
+    doc.text('RATE', 155, y);
+    doc.text('AMOUNT', W - margin, y, { align: 'right' });
+    y += 2;
+    doc.setFillColor(15, 14, 13);
+    doc.rect(margin, y, W - margin * 2, 0.3, 'F');
+    y += 6;
+
+    // Table rows
+    lineItems.forEach((item, idx) => {
+      if (idx % 2 === 0) {
+        doc.setFillColor(249, 248, 246);
+        doc.rect(margin, y - 3.5, W - margin * 2, 7.5, 'F');
+      }
+      const tot = (parseFloat(item.qty)||0) * (parseFloat(item.rate)||0);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(15, 14, 13);
+      doc.text(item.desc || '—', margin + 2, y + 1);
+      doc.setTextColor(122, 119, 114);
+      doc.text(String(item.qty), 140, y + 1);
+      doc.text(formatCurrency(item.rate), 155, y + 1);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(15, 14, 13);
+      doc.text(formatCurrency(tot), W - margin, y + 1, { align: 'right' });
+      y += 8;
+    });
+
+    y += 4;
+    doc.setFillColor(...accentRGB);
+    doc.rect(W - margin - 70, y, 70, 0.3, 'F');
+    y += 5;
+
+    // Totals
+    const totRows = [
+      ['Subtotal', formatCurrency(sub)],
+      tax > 0 ? [`Tax (${g('taxRate')}%)`, formatCurrency(tax)] : null,
+      discount > 0 ? [`Discount (${g('discountVal')}%)`, '-' + formatCurrency(discount)] : null,
+    ].filter(Boolean);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    totRows.forEach(([label, val]) => {
+      doc.setTextColor(61, 59, 56);
+      doc.text(label, W - margin - 70, y);
+      doc.text(val, W - margin, y, { align: 'right' });
+      y += 7;
+    });
+
+    // Grand total
+    doc.setFillColor(15, 14, 13);
+    doc.rect(W - margin - 70, y, 70, 0.4, 'F');
+    y += 5;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(15, 14, 13);
+    doc.text('Total Due', W - margin - 70, y);
+    doc.setTextColor(...accentRGB);
+    doc.text(formatCurrency(grand), W - margin, y, { align: 'right' });
+
+    // Footer
+    y = H - 40;
+    doc.setFillColor(249, 248, 246);
+    doc.rect(0, y - 2, W, 44, 'F');
+    doc.setFillColor(...accentRGB);
+    doc.rect(0, y - 2, W, 1, 'F');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7);
+    doc.setTextColor(122, 119, 114);
+    doc.text(isProposal ? 'TERMS & CONDITIONS' : 'PAYMENT DETAILS', margin, y + 4);
+    doc.text('NOTES', W / 2 + 4, y + 4);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(122, 119, 114);
+    if (g('paymentInfo')) doc.text(doc.splitTextToSize(g('paymentInfo'), 80), margin, y + 10);
+    if (g('notes')) doc.text(doc.splitTextToSize(g('notes'), 80), W / 2 + 4, y + 10);
+
+    const fname = `${g('docNumber') || (isProposal ? 'proposal' : 'invoice')}.pdf`;
+    doc.save(fname);
+    showToast('✓ PDF downloaded!');
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  // Init
+  renderLineItems();
+  updatePreview();
+</script>
+</body>
+</html>
